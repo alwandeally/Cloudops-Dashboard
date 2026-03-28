@@ -1,0 +1,16 @@
+<Solution>
+  <Folder Name="/Screenshots/">
+    <File Path="../../../OneDrive/Desktop/alert-history.png" />
+    <File Path="../../../OneDrive/Desktop/audit-logs.png" />
+    <File Path="../../../OneDrive/Desktop/dashboard-active-alerts.png" />
+    <File Path="../../../OneDrive/Desktop/dashboard-overview.png" />
+    <File Path="../../../OneDrive/Desktop/instances-page.png" />
+    <File Path="../../../OneDrive/Desktop/login-page.png" />
+    <File Path="../../../OneDrive/Desktop/viewer-dashboard-active-alerts.png" />
+    <File Path="../../../OneDrive/Desktop/viewer-dashboard.png" />
+  </Folder>
+  <Project Path="CloudOpsDashboard.Api/CloudOpsDashboard.Api.csproj" />
+  <Project Path="CloudOpsDashboard.Core/CloudOpsDashboard.Core.csproj" />
+  <Project Path="CloudOpsDashboard.Infrastructure/CloudOpsDashboard.Infrastructure.csproj" />
+  <Project Path="CloudOpsDashboard.Web/CloudOpsDashboard.Web.csproj" />
+</Solution>

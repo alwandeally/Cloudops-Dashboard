@@ -1,0 +1,390 @@
+﻿@page "/"
+@using System.Net.Http.Json
+@using CloudOpsDashboard.Web.Models
+@using CloudOpsDashboard.Web.Services
+@using Microsoft.AspNetCore.SignalR.Client
+@inject HttpClient Http
+@inject AuthService AuthService
+@inject NavigationManager Navigation
+@inject IJSRuntime JS
+@inject ToastService ToastService
+@implements IAsyncDisposable
+
+<PageTitle>Dashboard</PageTitle>
+
+@if (!checkedAccess)
+{
+    <div class="dashboard-shell">
+        <div class="loading-state">Checking access...</div>
+    </div>
+}
+else if (!isAuthenticated)
+{
+    <div class="dashboard-shell">
+        <div class="loading-state">Redirecting to login...</div>
+    </div>
+}
+else
+{
+    <div class="dashboard-shell">
+        <div class="dashboard-header">
+            <div>
+                <h1 class="dashboard-title">☁️ CloudOps Dashboard</h1>
+
+                <div class="dashboard-subrow">
+                    <span class="dashboard-subtitle">Live System Overview</span>
+
+                    @if (!string.IsNullOrWhiteSpace(currentRole))
+                    {
+                        <span class="sidebar-role-badge @GetRoleBadgeClass(currentRole)">
+                            @currentRole
+                        </span>
+                    }
+                </div>
+            </div>
+        </div>
+
+        @if (summary is null)
+        {
+            <div class="loading-state">Loading dashboard...</div>
+        }
+        else
+        {
+            <div class="metrics-grid">
+                <div class="metric-card">
+                    <span class="metric-title">Total Instances</span>
+                    <span class="metric-value">@summary.TotalInstances</span>
+                </div>
+
+                <div class="metric-card">
+                    <span class="metric-title">Running</span>
+                    <span class="metric-value green">@summary.RunningInstances</span>
+                </div>
+
+                <div class="metric-card">
+                    <span class="metric-title">Stopped</span>
+                    <span class="metric-value red">@summary.StoppedInstances</span>
+                </div>
+
+                <div class="metric-card">
+                    <span class="metric-title">Total Alerts</span>
+                    <span class="metric-value orange">@summary.TotalAlerts</span>
+                </div>
+
+                <div class="metric-card">
+                    <span class="metric-title">Critical Alerts</span>
+                    <span class="metric-value red">@summary.CriticalAlerts</span>
+                </div>
+
+                <div class="metric-card">
+                    <span class="metric-title">CPU Usage</span>
+                    <span class="metric-value blue">@($"{summary.AverageCpuUsage:F1}%")</span>
+                    <small class="metric-label">Live Metrics (Simulated)</small>
+                </div>
+
+                <div class="metric-card">
+                    <span class="metric-title">Memory Usage</span>
+                    <span class="metric-value blue">@($"{summary.AverageMemoryUsage:F1}%")</span>
+                    <small class="metric-label">Live Metrics (Simulated)</small>
+                </div>
+            </div>
+            <div class="health-status-grid">
+                <div class="panel-card health-card">
+                    <div class="health-label">API Status</div>
+                    <div class="health-value health-online">@healthStatus.ApiStatus</div>
+                </div>
+
+                <div class="panel-card health-card">
+                    <div class="health-label">Database Status</div>
+                    <div class="health-value @(healthStatus.DatabaseStatus == "Connected" ? "health-online" : "health-offline")">
+                        @healthStatus.DatabaseStatus
+                    </div>
+                </div>
+
+                <div class="panel-card health-card">
+                    <div class="health-label">SignalR Status</div>
+                    <div class="health-value health-live">@healthStatus.SignalRStatus</div>
+                </div>
+
+                <div class="panel-card health-card">
+                    <div class="health-label">Last Refresh</div>
+                    <div class="health-value health-neutral">
+                        @healthStatus.LastRefreshUtc.ToLocalTime().ToString("g")
+                    </div>
+                </div>
+            </div>
+            <div class="charts-grid">
+                <div class="panel-card">
+                    <div class="panel-title">Infrastructure Status</div>
+                    <canvas id="instancesChart"></canvas>
+                </div>
+
+                <div class="panel-card">
+                    <div class="panel-title">Resource Utilization</div>
+                    <canvas id="usageChart"></canvas>
+                </div>
+            </div>
+        }
+
+        <div class="section-header">
+            <h2>🚨 Active Alerts</h2>
+            <span class="section-badge">@GetActiveAlertCount() active</span>
+        </div>
+
+        @if (alerts is null)
+        {
+            <div class="loading-state">Loading alerts...</div>
+        }
+        else if (!alerts.Any())
+        {
+            <div class="empty-card">
+                <h3>No active alerts 🎉</h3>
+                <p>Your infrastructure is currently stable.</p>
+            </div>
+        }
+        else
+        {
+            <div class="alerts-grid">
+                @foreach (var alert in alerts)
+                {
+                    <div class="alert-card">
+                        <div class="alert-top">
+                            <span class="status-badge active">Active</span>
+                            <small class="alert-mini-title">@alert.Title</small>
+                        </div>
+
+                        <h3 class="alert-description">@alert.Description</h3>
+
+                        <div class="alert-severity @GetSeverityClass(alert.Severity)">
+                            ● @alert.Severity
+                        </div>
+
+                        <div class="alert-footer">
+                            <small>@alert.CreatedAt.ToLocalTime().ToString("g")</small>
+
+                            @if (!string.IsNullOrWhiteSpace(alert.Instance) || !string.IsNullOrWhiteSpace(alert.Region))
+                            {
+                                <small>
+                                    @(string.IsNullOrWhiteSpace(alert.Instance) ? "" : alert.Instance)
+                                    @(!string.IsNullOrWhiteSpace(alert.Instance) && !string.IsNullOrWhiteSpace(alert.Region) ? " - " : "")
+                                    @(string.IsNullOrWhiteSpace(alert.Region) ? "" : alert.Region)
+                                </small>
+                            }
+                        </div>
+
+                        @if (isAdmin)
+                        {
+                            <button class="resolve-btn" @onclick="() => ResolveAlert(alert.Id)">
+                                ✔ Resolve
+                            </button>
+                        }
+                    </div>
+                }
+            </div>
+        }
+    </div>
+}
+
+@code {
+    private DashboardSummary? summary;
+    private List<AlertItem>? alerts;
+
+    private bool checkedAccess;
+    private bool isAuthenticated;
+    private bool isAdmin;
+    private bool chartsRendered;
+
+    private string? currentRole;
+
+    private PeriodicTimer? timer;
+    private CancellationTokenSource? timerCts;
+    private HubConnection? hubConnection;
+    private HealthStatusItem healthStatus = new();
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            isAuthenticated = await AuthService.IsAuthenticatedAsync();
+
+            if (!isAuthenticated)
+            {
+                checkedAccess = true;
+                StateHasChanged();
+                Navigation.NavigateTo("/login", true);
+                return;
+            }
+
+            currentRole = await AuthService.GetRoleAsync();
+            isAdmin = string.Equals(currentRole, "Admin", StringComparison.OrdinalIgnoreCase);
+
+            checkedAccess = true;
+
+            await LoadData();
+            StateHasChanged();
+
+            await SetupSignalR();
+            StartPolling();
+            return;
+
+            
+        }
+
+        if (summary is not null && !chartsRendered)
+        {
+            await RenderCharts();
+            chartsRendered = true;
+        }
+    }
+
+    private async Task LoadData()
+    {
+        summary = await Http.GetFromJsonAsync<DashboardSummary>("https://localhost:7161/api/dashboard/summary");
+        alerts = await Http.GetFromJsonAsync<List<AlertItem>>("https://localhost:7161/api/Alerts") ?? new List<AlertItem>();
+        chartsRendered = false;
+
+        healthStatus = await Http.GetFromJsonAsync<HealthStatusItem>("https://localhost:7161/api/dashboard/health")
+               ?? new HealthStatusItem
+               {
+                   ApiStatus = "Online",
+                   DatabaseStatus = "Connected",
+                   SignalRStatus = "Live",
+                   LastRefreshUtc = DateTime.UtcNow
+               };
+    }
+
+    private async Task SetupSignalR()
+    {
+        hubConnection = new HubConnectionBuilder()
+            .WithUrl("https://localhost:7161/dashboardhub")
+            .WithAutomaticReconnect()
+            .Build();
+
+        hubConnection.On("ReceiveDashboardUpdate", async () =>
+        {
+            await InvokeAsync(async () =>
+            {
+                await LoadData();
+                StateHasChanged();
+            });
+        });
+
+        try
+        {
+            await hubConnection.StartAsync();
+        }
+        catch
+        {
+            // Polling still keeps the dashboard updated
+        }
+    }
+
+    private void StartPolling()
+    {
+        timerCts = new CancellationTokenSource();
+        timer = new PeriodicTimer(TimeSpan.FromSeconds(5));
+
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                while (timer is not null && await timer.WaitForNextTickAsync(timerCts.Token))
+                {
+                    await InvokeAsync(async () =>
+                    {
+                        await LoadData();
+                        StateHasChanged();
+                    });
+                }
+            }
+            catch (OperationCanceledException)
+            {
+            }
+        });
+    }
+
+    private async Task RenderCharts()
+    {
+        if (summary is null)
+            return;
+
+        await JS.InvokeVoidAsync("cloudCharts.renderInstancesChart",
+            summary.RunningInstances,
+            summary.StoppedInstances);
+
+        await JS.InvokeVoidAsync("cloudCharts.renderUsageChart",
+            summary.AverageCpuUsage,
+            summary.AverageMemoryUsage);
+    }
+
+   
+
+      
+
+        private async Task ResolveAlert(int alertId)
+    {
+        if (!isAdmin)
+            return;
+
+        var response = await Http.PostAsync($"https://localhost:7161/api/Alerts/resolve/{alertId}", null);
+
+        if (response.IsSuccessStatusCode)
+        {
+            await LoadData();
+            StateHasChanged();
+            ToastService.ShowSuccess("Alert resolved successfully.");
+        }
+        else
+        {
+            ToastService.ShowError("Failed to resolve alert.");
+        }
+    }
+
+    private int GetActiveAlertCount()
+    {
+        return alerts?.Count ?? 0;
+    }
+
+    private static string GetSeverityClass(string severity)
+    {
+        return severity.ToLower() switch
+        {
+            "critical" => "severity-critical",
+            "high" => "severity-high",
+            "medium" => "severity-medium",
+            "low" => "severity-low",
+            _ => "severity-default"
+        };
+    }
+
+    private static string GetRoleBadgeClass(string? role)
+    {
+        return role?.ToLower() switch
+        {
+            "admin" => "role-admin",
+            "viewer" => "role-viewer",
+            _ => "role-viewer"
+        };
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        try
+        {
+            timerCts?.Cancel();
+            timer?.Dispose();
+
+            if (hubConnection is not null)
+            {
+                await hubConnection.DisposeAsync();
+            }
+        }
+        catch
+        {
+        }
+        finally
+        {
+            timerCts?.Dispose();
+        }
+    }
+}

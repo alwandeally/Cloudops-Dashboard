@@ -1,0 +1,88 @@
+﻿@inherits LayoutComponentBase
+@inject CloudOpsDashboard.Web.Services.AuthService AuthService
+@inject CloudOpsDashboard.Web.Services.ToastService ToastService
+@inject NavigationManager Navigation
+
+<div class="layout">
+    <aside class="sidebar @(IsLoginPage ? "sidebar-guest" : "")">
+        <div class="sidebar-top">
+            <div class="logo-wrap">
+                <h2 class="logo">☁️ CloudOps</h2>
+            </div>
+
+            @if (!IsLoginPage)
+            {
+                <div class="user-card">
+                    <span class="user-name">@displayUser</span>
+                    <span class="sidebar-role-badge @GetRoleBadgeClass(displayRole)">
+                        @displayRole
+                    </span>
+                </div>
+            }
+
+            <nav class="nav-links">
+                <NavLink href="/" class="nav-link" Match="NavLinkMatch.All">Dashboard</NavLink>
+
+                @if (IsLoginPage)
+                {
+                    <NavLink href="/login" class="nav-link">Login</NavLink>
+                }
+                else if (string.Equals(displayRole, "Admin", StringComparison.OrdinalIgnoreCase))
+                {
+                    <NavLink href="/admin" class="nav-link">Admin Panel</NavLink>
+                    <NavLink href="/instances" class="nav-link">Instances</NavLink>
+                    <NavLink href="/audit-logs" class="nav-link">Audit Logs</NavLink>
+                    <NavLink href="/alert-history" class="nav-link">Alert History</NavLink>
+                }
+            </nav>
+        </div>
+
+        @if (!IsLoginPage)
+        {
+            <div class="sidebar-bottom">
+                <button class="logout-btn" @onclick="LogoutAsync">Logout</button>
+            </div>
+        }
+    </aside>
+
+    <main class="main-content @(IsLoginPage ? "main-content-login" : "")">
+        @Body
+    </main>
+</div>
+
+<ToastContainer />
+
+@code {
+    private string displayUser = "User";
+    private string displayRole = "Viewer";
+
+    private bool IsLoginPage =>
+        Navigation.ToBaseRelativePath(Navigation.Uri)
+            .Equals("login", StringComparison.OrdinalIgnoreCase);
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (!IsLoginPage)
+        {
+            displayUser = await AuthService.GetUserAsync() ?? "User";
+            displayRole = await AuthService.GetRoleAsync() ?? "Viewer";
+        }
+    }
+
+    private async Task LogoutAsync()
+    {
+        await AuthService.LogoutAsync();
+        ToastService.ShowInfo("You have been logged out.");
+        Navigation.NavigateTo("/login", true);
+    }
+
+    private static string GetRoleBadgeClass(string? role)
+    {
+        return role?.ToLower() switch
+        {
+            "admin" => "role-admin",
+            "viewer" => "role-viewer",
+            _ => "role-viewer"
+        };
+    }
+}

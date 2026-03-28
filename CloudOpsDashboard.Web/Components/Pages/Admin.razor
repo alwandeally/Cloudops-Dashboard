@@ -1,0 +1,143 @@
+﻿@page "/admin"
+@inject CloudOpsDashboard.Web.Services.AuthService AuthService
+@inject NavigationManager Navigation
+
+<PageTitle>Admin Panel</PageTitle>
+
+@if (!checkedAccess)
+{
+    <div class="dashboard-shell">
+        <div class="loading-state">Checking administrator access...</div>
+    </div>
+}
+else if (!isAuthorized)
+{
+    <div class="dashboard-shell">
+        <div class="empty-card">
+            <h3>Access denied</h3>
+            <p>You do not have permission to view the admin panel.</p>
+        </div>
+    </div>
+}
+else
+{
+    <div class="dashboard-shell">
+        <div class="dashboard-header">
+            <div>
+                <h1 class="dashboard-title">🛠 Admin Panel</h1>
+                <div class="dashboard-subrow">
+                    <span class="dashboard-subtitle">Administrator Access</span>
+                    <span class="sidebar-role-badge role-admin">Admin</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="metrics-grid">
+            <div class="metric-card">
+                <span class="metric-title">User Management</span>
+                <span class="metric-value blue">2</span>
+                <small class="metric-label">Admin and Viewer accounts</small>
+            </div>
+
+            <div class="metric-card">
+                <span class="metric-title">System Policies</span>
+                <span class="metric-value orange">3</span>
+                <small class="metric-label">Security and access rules</small>
+            </div>
+
+            <div class="metric-card">
+                <span class="metric-title">Audit Events</span>
+                <span class="metric-value green">18</span>
+                <small class="metric-label">Tracked admin activity</small>
+            </div>
+        </div>
+
+        <div class="admin-grid">
+            <div class="panel-card">
+                <div class="panel-title">User Access Overview</div>
+
+                <div class="admin-list">
+                    <div class="admin-list-item">
+                        <div>
+                            <strong>admin</strong>
+                            <small>Full platform control</small>
+                        </div>
+                        <span class="sidebar-role-badge role-admin">Admin</span>
+                    </div>
+
+                    <div class="admin-list-item">
+                        <div>
+                            <strong>viewer</strong>
+                            <small>Read-only dashboard access</small>
+                        </div>
+                        <span class="sidebar-role-badge role-viewer">Viewer</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel-card">
+                <div class="panel-title">System Policies</div>
+
+                <div class="admin-policy-panel">
+                    <div class="admin-policy-list">
+                        <div class="admin-policy-item">
+                            <strong>Role-based access</strong>
+                            <small>Admin-only access to restricted pages</small>
+                        </div>
+
+                        <div class="admin-policy-item">
+                            <strong>Alert resolution tracking</strong>
+                            <small>Resolved alerts are logged for auditing</small>
+                        </div>
+
+                        <div class="admin-policy-item">
+                            <strong>Session persistence</strong>
+                            <small>Authentication stored in local browser storage</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="panel-card admin-wide-card">
+            <div class="panel-title">Audit &amp; Operations Summary</div>
+
+            <div class="admin-summary-grid">
+                <div class="admin-summary-box">
+                    <span class="summary-label">Resolved Alerts Logged</span>
+                    <span class="summary-value green">Enabled</span>
+                </div>
+
+                <div class="admin-summary-box">
+                    <span class="summary-label">Real-time Refresh</span>
+                    <span class="summary-value blue">Active</span>
+                </div>
+
+                <div class="admin-summary-box">
+                    <span class="summary-label">Environment</span>
+                    <span class="summary-value orange">Demo / Portfolio</span>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private bool checkedAccess;
+    private bool isAuthorized;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var isAuthenticated = await AuthService.IsAuthenticatedAsync();
+
+        if (!isAuthenticated)
+        {
+            checkedAccess = true;
+            Navigation.NavigateTo("/login", true);
+            return;
+        }
+
+        isAuthorized = await AuthService.IsInRoleAsync("Admin");
+        checkedAccess = true;
+    }
+}

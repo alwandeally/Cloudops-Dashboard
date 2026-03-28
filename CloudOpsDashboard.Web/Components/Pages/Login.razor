@@ -1,0 +1,68 @@
+﻿@page "/login"
+@using CloudOpsDashboard.Web.Services
+@inject AuthService AuthService
+@inject ToastService ToastService
+@inject NavigationManager Navigation
+
+<PageTitle>Login</PageTitle>
+
+<div class="login-page">
+    <div class="login-card">
+        <h1 class="login-title">CloudOps Login</h1>
+        <p class="login-subtitle">Sign in to access the dashboard.</p>
+
+        <EditForm Model="this" OnValidSubmit="HandleLogin">
+            <div class="login-form-group">
+                <InputText @bind-Value="username" class="login-input" placeholder="Username" />
+            </div>
+
+            <div class="login-form-group">
+                <InputText @bind-Value="password" class="login-input" type="password" placeholder="Password" />
+            </div>
+
+            <button type="submit" class="login-btn">Sign In</button>
+        </EditForm>
+
+        @if (!string.IsNullOrWhiteSpace(errorMessage))
+        {
+            <p class="login-error">@errorMessage</p>
+        }
+
+        <div class="login-demo-box">
+            <h4>Demo credentials</h4>
+
+            <p><strong>Admin</strong></p>
+            <p>Username: admin</p>
+            <p>Password: admin123</p>
+
+            <br />
+
+            <p><strong>Viewer</strong></p>
+            <p>Username: viewer</p>
+            <p>Password: viewer123</p>
+        </div>
+    </div>
+</div>
+
+@code {
+    private string username = string.Empty;
+    private string password = string.Empty;
+    private string? errorMessage;
+
+    private async Task HandleLogin()
+    {
+        errorMessage = null;
+
+        var success = await AuthService.LoginAsync(username, password);
+
+        if (!success)
+        {
+            errorMessage = "Invalid username or password.";
+            ToastService.ShowError("Invalid username or password.");
+            return;
+        }
+
+        ToastService.ShowSuccess("Login successful.");
+        Navigation.NavigateTo("/", true);
+    }
+}

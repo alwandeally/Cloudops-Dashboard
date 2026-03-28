@@ -1,0 +1,183 @@
+﻿@page "/instances"
+@using System.Net.Http.Json
+@using CloudOpsDashboard.Web.Models
+@using CloudOpsDashboard.Web.Services
+@inject HttpClient Http
+@inject AuthService AuthService
+@inject ToastService ToastService
+@inject NavigationManager Navigation
+
+<PageTitle>Instances</PageTitle>
+
+@if (!checkedAccess)
+{
+    <div class="dashboard-shell">
+        <div class="loading-state">Checking administrator access...</div>
+    </div>
+}
+else if (!isAuthorized)
+{
+    <div class="dashboard-shell">
+        <div class="empty-card">
+            <h3>Access denied</h3>
+            <p>You do not have permission to manage instances.</p>
+        </div>
+    </div>
+}
+else
+{
+    <div class="dashboard-shell">
+        <div class="dashboard-header">
+            <div>
+                <h1 class="dashboard-title">🖥️ Instances</h1>
+                <div class="dashboard-subrow">
+                    <span class="dashboard-subtitle">Cloud instance operations</span>
+                    <span class="sidebar-role-badge role-admin">Admin</span>
+                </div>
+            </div>
+        </div>
+
+        @if (instances is null)
+        {
+            <div class="loading-state">Loading instances...</div>
+        }
+        else if (!instances.Any())
+        {
+            <div class="empty-card">
+                <h3>No instances found</h3>
+                <p>Cloud instances will appear here once available.</p>
+            </div>
+        }
+        else
+        {
+            <div class="panel-card audit-table-card instances-table-card">
+                <div class="panel-title">Instance Management</div>
+
+                <div class="instances-table-scroll">
+                    <table class="audit-table">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Status</th>
+                                <th>Type</th>
+                                <th>CPU</th>
+                                <th>Memory</th>
+                                <th>Uptime</th>
+                                <th>Last Updated</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var instance in instances)
+                            {
+                                <tr>
+                                    <td>@instance.Name</td>
+                                    <td>
+                                        <span class="status-badge @(instance.Status == "Running" ? "resolved" : "active")">
+                                            @instance.Status
+                                        </span>
+                                    </td>
+                                    <td>@instance.InstanceType</td>
+                                    <td>@($"{instance.CpuUsage:F1}%")</td>
+                                    <td>@($"{instance.MemoryUsage:F1}%")</td>
+                                    <td>@($"{instance.UptimePercentage:F2}%")</td>
+                                    <td>@instance.LastUpdated.ToLocalTime().ToString("g")</td>
+                                    <td>
+                                        <div class="instance-actions">
+                                            <button class="instance-btn start-btn" @onclick="() => StartInstance(instance.Id)">
+                                                Start
+                                            </button>
+                                            <button class="instance-btn stop-btn" @onclick="() => StopInstance(instance.Id)">
+                                                Stop
+                                            </button>
+                                            <button class="instance-btn restart-btn" @onclick="() => RestartInstance(instance.Id)">
+                                                Restart
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        }
+    </div>
+}
+
+@code {
+    private List<InstanceItem>? instances;
+    private bool checkedAccess;
+    private bool isAuthorized;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var isAuthenticated = await AuthService.IsAuthenticatedAsync();
+
+        if (!isAuthenticated)
+        {
+            checkedAccess = true;
+            Navigation.NavigateTo("/login", true);
+            return;
+        }
+
+        isAuthorized = await AuthService.IsInRoleAsync("Admin");
+        checkedAccess = true;
+
+        if (isAuthorized)
+        {
+            await LoadInstances();
+        }
+    }
+
+    private async Task LoadInstances()
+    {
+        instances = await Http.GetFromJsonAsync<List<InstanceItem>>("https://localhost:7161/api/instances")
+                    ?? new List<InstanceItem>();
+    }
+
+    private async Task StartInstance(int id)
+    {
+        var response = await Http.PostAsync($"https://localhost:7161/api/instances/{id}/start", null);
+
+        if (response.IsSuccessStatusCode)
+        {
+            await LoadInstances();
+            ToastService.ShowSuccess("Instance started successfully.");
+        }
+        else
+        {
+            ToastService.ShowError("Failed to start instance.");
+        }
+    }
+
+    private async Task StopInstance(int id)
+    {
+        var response = await Http.PostAsync($"https://localhost:7161/api/instances/{id}/stop", null);
+
+        if (response.IsSuccessStatusCode)
+        {
+            await LoadInstances();
+            ToastService.ShowSuccess("Instance stopped successfully.");
+        }
+        else
+        {
+            ToastService.ShowError("Failed to stop instance.");
+        }
+    }
+
+    private async Task RestartInstance(int id)
+    {
+        var response = await Http.PostAsync($"https://localhost:7161/api/instances/{id}/restart", null);
+
+        if (response.IsSuccessStatusCode)
+        {
+            await LoadInstances();
+            ToastService.ShowSuccess("Instance restarted successfully.");
+        }
+        else
+        {
+            ToastService.ShowError("Failed to restart instance.");
+        }
+    }
+}

@@ -1,0 +1,245 @@
+﻿@page "/alert-history"
+@using System.Net.Http.Json
+@using CloudOpsDashboard.Web.Models
+@using CloudOpsDashboard.Web.Services
+@inject HttpClient Http
+@inject AuthService AuthService
+@inject ToastService ToastService
+@inject NavigationManager Navigation
+@inject IJSRuntime JS
+
+<PageTitle>Alert History</PageTitle>
+
+@if (!checkedAccess)
+{
+    <div class="dashboard-shell">
+        <div class="loading-state">Checking administrator access...</div>
+    </div>
+}
+else if (!isAuthorized)
+{
+    <div class="dashboard-shell">
+        <div class="empty-card">
+            <h3>Access denied</h3>
+            <p>You do not have permission to view alert history.</p>
+        </div>
+    </div>
+}
+else
+{
+    <div class="dashboard-shell">
+        <div class="dashboard-header">
+            <div>
+                <h1 class="dashboard-title">🕘 Alert History</h1>
+                <div class="dashboard-subrow">
+                    <span class="dashboard-subtitle">Full alert lifecycle overview</span>
+                    <span class="sidebar-role-badge role-admin">Admin</span>
+                </div>
+            </div>
+
+            <div class="page-actions">
+                <button class="export-btn" @onclick="ExportAlertHistoryAsync">
+                    Export CSV
+                </button>
+            </div>
+        </div>
+
+        @if (alerts is null)
+        {
+            <div class="loading-state">Loading alert history...</div>
+        }
+        else
+        {
+            <div class="panel-card history-filter-card">
+                <div class="panel-title">Search & Filters</div>
+
+                <div class="history-filters-grid">
+                    <input class="history-input"
+                           placeholder="Search title, instance or region..."
+                           @bind="searchTerm"
+                           @bind:event="oninput" />
+
+                    <select class="history-select" @bind="selectedStatus">
+                        <option value="All">All Statuses</option>
+                        <option value="Active">Active</option>
+                        <option value="Resolved">Resolved</option>
+                    </select>
+
+                    <select class="history-select" @bind="selectedSeverity">
+                        <option value="All">All Severities</option>
+                        <option value="Critical">Critical</option>
+                        <option value="High">High</option>
+                        <option value="Medium">Medium</option>
+                        <option value="Low">Low</option>
+                    </select>
+
+                    <select class="history-select" @bind="sortOrder">
+                        <option value="Newest">Newest First</option>
+                        <option value="Oldest">Oldest First</option>
+                    </select>
+                </div>
+            </div>
+
+            @if (!FilteredAlerts.Any())
+            {
+                <div class="empty-card">
+                    <h3>No matching alerts</h3>
+                    <p>Try adjusting your search or filter criteria.</p>
+                </div>
+            }
+            else
+            {
+                <div class="panel-card audit-table-card">
+                    <div class="panel-title">All Alerts</div>
+
+                    <div class="audit-table-wrapper">
+                        <table class="audit-table">
+                            <thead>
+                                <tr>
+                                    <th>Title</th>
+                                    <th>Severity</th>
+                                    <th>Status</th>
+                                    <th>Instance / Region</th>
+                                    <th>Created</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var alert in FilteredAlerts)
+                                {
+                                    <tr>
+                                        <td>@alert.Title</td>
+                                        <td>
+                                            <span class="@GetSeverityClass(alert.Severity)">
+                                                @alert.Severity
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <span class="status-badge @(alert.IsResolved ? "resolved" : "active")">
+                                                @(alert.IsResolved ? "Resolved" : "Active")
+                                            </span>
+                                        </td>
+                                        <td>
+                                            @if (!string.IsNullOrWhiteSpace(alert.Instance) || !string.IsNullOrWhiteSpace(alert.Region))
+                                            {
+                                                @(string.IsNullOrWhiteSpace(alert.Instance) ? "" : alert.Instance)
+                                                @(!string.IsNullOrWhiteSpace(alert.Instance) && !string.IsNullOrWhiteSpace(alert.Region) ? " - " : "")
+                                                @(string.IsNullOrWhiteSpace(alert.Region) ? "" : alert.Region)
+                                            }
+                                        </td>
+                                        <td>@alert.CreatedAt.ToLocalTime().ToString("g")</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            }
+        }
+    </div>
+}
+
+@code {
+    private List<AlertHistoryItem>? alerts;
+    private bool checkedAccess;
+    private bool isAuthorized;
+
+    private string searchTerm = string.Empty;
+    private string selectedStatus = "All";
+    private string selectedSeverity = "All";
+    private string sortOrder = "Newest";
+
+    private IEnumerable<AlertHistoryItem> FilteredAlerts
+    {
+        get
+        {
+            if (alerts is null)
+                return Enumerable.Empty<AlertHistoryItem>();
+
+            IEnumerable<AlertHistoryItem> query = alerts;
+
+            if (!string.IsNullOrWhiteSpace(searchTerm))
+            {
+                var term = searchTerm.Trim().ToLower();
+
+                query = query.Where(a =>
+                    (!string.IsNullOrWhiteSpace(a.Title) && a.Title.ToLower().Contains(term)) ||
+                    (!string.IsNullOrWhiteSpace(a.Instance) && a.Instance.ToLower().Contains(term)) ||
+                    (!string.IsNullOrWhiteSpace(a.Region) && a.Region.ToLower().Contains(term)));
+            }
+
+            if (selectedStatus != "All")
+            {
+                query = selectedStatus switch
+                {
+                    "Active" => query.Where(a => !a.IsResolved),
+                    "Resolved" => query.Where(a => a.IsResolved),
+                    _ => query
+                };
+            }
+
+            if (selectedSeverity != "All")
+            {
+                query = query.Where(a => string.Equals(a.Severity, selectedSeverity, StringComparison.OrdinalIgnoreCase));
+            }
+
+            query = sortOrder switch
+            {
+                "Oldest" => query.OrderBy(a => a.CreatedAt),
+                _ => query.OrderByDescending(a => a.CreatedAt)
+            };
+
+            return query.ToList();
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        var isAuthenticated = await AuthService.IsAuthenticatedAsync();
+
+        if (!isAuthenticated)
+        {
+            checkedAccess = true;
+            Navigation.NavigateTo("/login", true);
+            return;
+        }
+
+        isAuthorized = await AuthService.IsInRoleAsync("Admin");
+        checkedAccess = true;
+
+        if (isAuthorized)
+        {
+            alerts = await Http.GetFromJsonAsync<List<AlertHistoryItem>>("https://localhost:7161/api/alerts/all")
+                     ?? new List<AlertHistoryItem>();
+
+            alerts = alerts
+                .OrderByDescending(a => a.CreatedAt)
+                .ToList();
+        }
+    }
+
+    private async Task ExportAlertHistoryAsync()
+    {
+        try
+        {
+            var url = "https://localhost:7161/api/alerts/all/export";
+            await JS.InvokeVoidAsync("downloadFileFromUrl", url);
+            ToastService.ShowSuccess("Alert history export started.");
+        }
+        catch
+        {
+            ToastService.ShowError("Failed to export alert history.");
+        }
+    }
+
+    private static string GetSeverityClass(string severity)
+    {
+        return severity.ToLower() switch
+        {
+            "critical" => "severity-critical",
+            "high" => "severity-high",
+            "medium" => "severity-medium",
+            "low" => "severity-low",
+            _ => "severity-default"
+        };
+    }
+}

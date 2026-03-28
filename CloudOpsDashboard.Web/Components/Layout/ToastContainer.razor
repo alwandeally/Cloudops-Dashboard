@@ -1,0 +1,58 @@
+﻿@inject CloudOpsDashboard.Web.Services.ToastService ToastService
+@implements IDisposable
+
+@if (visible)
+{
+    <div class="toast-container">
+        <div class="toast-message toast-@type">
+            @message
+        </div>
+    </div>
+}
+
+@code {
+    private string message = string.Empty;
+    private string type = "info";
+    private bool visible;
+    private CancellationTokenSource? cts;
+
+    protected override void OnInitialized()
+    {
+        ToastService.OnShow += ShowToast;
+    }
+
+    private void ShowToast(string toastMessage, string toastType)
+    {
+        message = toastMessage;
+        type = toastType;
+        visible = true;
+
+        cts?.Cancel();
+        cts?.Dispose();
+        cts = new CancellationTokenSource();
+
+        _ = HideToastAsync(cts.Token);
+
+        InvokeAsync(StateHasChanged);
+    }
+
+    private async Task HideToastAsync(CancellationToken token)
+    {
+        try
+        {
+            await Task.Delay(2500, token);
+            visible = false;
+            await InvokeAsync(StateHasChanged);
+        }
+        catch (TaskCanceledException)
+        {
+        }
+    }
+
+    public void Dispose()
+    {
+        ToastService.OnShow -= ShowToast;
+        cts?.Cancel();
+        cts?.Dispose();
+    }
+}
