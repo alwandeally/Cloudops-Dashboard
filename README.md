@@ -162,6 +162,12 @@ The alert history page gives a full lifecycle view of alerts in the system. It i
 
 The viewer dashboard demonstrates role-based access restrictions. It confirms that the application supports multiple user roles with tailored experiences.
 
+### 9. Swagger API Documentation
+![Swagger API](Screenshots/swagger-api.png)
+
+The Swagger UI demonstrates the backend API layer that powers the CloudOps Dashboard platform.  
+It exposes the application’s endpoints for authentication, dashboard data, alerts, audit logs, exports, health checks, and instance operations.
+
 ---
 
 ## Architecture
