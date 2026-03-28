@@ -120,7 +120,7 @@ The goal of this project is to present more than a basic CRUD application. It is
 
 ## Screenshots
 
-> All screenshots should be stored in the `Screenshots` folder in the root of the repository.
+
 
 ### 1. Login Page
 ![Login Page](Screenshots/login-page.png)
