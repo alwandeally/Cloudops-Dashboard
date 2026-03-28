@@ -168,6 +168,12 @@ The viewer dashboard demonstrates role-based access restrictions. It confirms th
 The Swagger UI demonstrates the backend API layer that powers the CloudOps Dashboard platform.  
 It exposes the application’s endpoints for authentication, dashboard data, alerts, audit logs, exports, health checks, and instance operations.
 
+### 10. Dashboard Summary Endpoint Response
+![Dashboard Summary Endpoint Response](Screenshots/dashboard-summary-endpoint.png)
+
+This screenshot highlights the `GET /api/Dashboard/summary` endpoint in Swagger UI returning a successful `200` response.  
+It confirms that the frontend dashboard is backed by live API data for instance counts, alert totals, and resource usage metrics.
+
 ---
 
 ## Architecture
