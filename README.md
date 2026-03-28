@@ -305,13 +305,15 @@ If migrations already exist, run:
 
 ```powershell
 Update-Database -StartupProject CloudOpsDashboard.Api
-
+```
 If you need to create a new migration in future, use:
 
+```powershell
 Add-Migration MigrationName -StartupProject CloudOpsDashboard.Api
 Update-Database -StartupProject CloudOpsDashboard.Api
+```
 
-4. Verify the database
+### 4. Verify the database
 
 Open SQL Server Management Studio and confirm that CloudOpsDb exists.
 
@@ -322,25 +324,26 @@ Important tables include:
 	•	AuditLogs
 	•	InstanceMetrics
 
-5. Seed users if required
+### 5. Seed users if required
 
 If the AppUsers table is empty, run:
 
+```SQL
 INSERT INTO AppUsers (Username, Password, Role)
 VALUES
 ('admin', 'admin123', 'Admin'),
 ('viewer', 'viewer123', 'Viewer');
+```
 
-Then verify:
+Then Verify:
 
+```SQL
 SELECT * FROM AppUsers;
+```
 
+## How to Launch the Projects
 
---- 
-
-How to Launch the Projects
-
-Step 1: Run the API
+### Step 1: Run the API
 
 Set CloudOpsDashboard.Api as the startup project and run it.
 
@@ -353,39 +356,41 @@ This enables:
 	•	SignalR hub
 	•	health endpoints
 
-Step 2: Run the Web application
+### Step 2: Run the Web application
 
 Set CloudOpsDashboard.Web as the startup project and run it.
 
-Step 3: Open the browser
+### Step 3: Open the browser
 
 The web app should open on a localhost URL similar to:
 
+```
 https://localhost:7081
-
+```
 The API will typically run on something similar to:
 
+```
 https://localhost:7161
-
+```
 Ports may vary depending on your launch settings.
-
----
-
-## Demo Credentials
-
-Admin
-	•	Username: admin
-	•	Password: admin123
-
-Viewer
-	•	Username: viewer
-	•	Password: viewer123
 
 --- 
 
+## Demo Credentials
+
+### Admin
+	•	Username: admin
+	•	Password: admin123
+
+### Viewer
+	•	Username: viewer
+	•	Password: viewer123
+
+---
+
 ## Role-Based Access
 
-Admin Access
+### Admin Access
 
 Admin users can access:
 	•	Dashboard
@@ -396,7 +401,7 @@ Admin users can access:
 	•	Exports
 	•	Operational controls
 
-Viewer Access
+### Viewer Access
 
 Viewer users are intended to demonstrate restricted role-based access. They can log in and access limited dashboard functionality based on the design of the platform.
 
@@ -426,7 +431,7 @@ If login fails:
 	•	verify the API is running
 	•	confirm the Web project is calling the correct API port
 
---- 
+---
 
 ### Future Improvements
 
@@ -444,7 +449,7 @@ Possible future enhancements include:
 
 ---
 
-Why This Project Matters
+## Why This Project Matters
 
 CloudOps Dashboard was built to demonstrate more than interface design.
 
