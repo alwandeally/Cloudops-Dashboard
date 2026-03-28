@@ -318,11 +318,11 @@ Update-Database -StartupProject CloudOpsDashboard.Api
 Open SQL Server Management Studio and confirm that CloudOpsDb exists.
 
 Important tables include:
-	•	AppUsers
-	•	CloudInstances
-	•	CloudAlerts
-	•	AuditLogs
-	•	InstanceMetrics
+•	AppUsers
+•	CloudInstances
+•	CloudAlerts
+•	AuditLogs
+•	InstanceMetrics
 
 ### 5. Seed users if required
 
@@ -348,13 +348,13 @@ SELECT * FROM AppUsers;
 Set CloudOpsDashboard.Api as the startup project and run it.
 
 This enables:
-	•	authentication endpoints
-	•	dashboard endpoints
-	•	alert endpoints
-	•	audit log endpoints
-	•	export endpoints
-	•	SignalR hub
-	•	health endpoints
+•	authentication endpoints
+•	dashboard endpoints
+•	alert endpoints
+•	audit log endpoints
+•	export endpoints
+•	SignalR hub
+•	health endpoints
 
 ### Step 2: Run the Web application
 
@@ -393,13 +393,13 @@ Ports may vary depending on your launch settings.
 ### Admin Access
 
 Admin users can access:
-	•	Dashboard
-	•	Admin Panel
-	•	Instances
-	•	Audit Logs
-	•	Alert History
-	•	Exports
-	•	Operational controls
+1.	Dashboard
+2.	Admin Panel
+3.	Instances
+4.	Audit Logs
+5.	Alert History
+6.	Exports
+7.	Operational controls
 
 ### Viewer Access
 
@@ -410,8 +410,8 @@ Viewer users are intended to demonstrate restricted role-based access. They can 
 ## Exports
 
 The platform includes built-in CSV export support for:
-	•	Audit Logs
-	•	Alert History
+1. Audit Logs
+2. Alert History
 
 This simulates a realistic reporting workflow commonly required in cloud operations and administrative tooling.
 
@@ -420,32 +420,39 @@ This simulates a realistic reporting workflow commonly required in cloud operati
 ## Final Notes for Smooth Execution
 
 If you encounter rebuild or file-lock issues:
-	1.	Stop all running projects
-	2.	Close browser tabs
-	3.	End lingering dotnet or VBCSCompiler processes if needed
-	4.	Clean the solution
-	5.	Rebuild the solution
 
+1. Stop all running projects
+2. Close browser tabs
+3. End lingering dotnet or VBCSCompiler processes if needed
+4. Clean the solution
+5. Rebuild the solution
+
+	
 If login fails:
-	•	confirm that the AppUsers table contains records
-	•	verify the API is running
-	•	confirm the Web project is calling the correct API port
+confirm that the AppUsers table contains records
+1. confirm that the AppUsers table contains records
+2. verify the API is running
+3. confirm the Web project is calling the correct API port
+
+	
 
 ---
 
 ### Future Improvements
 
 Possible future enhancements include:
-	•	password hashing
-	•	JWT authentication
-	•	user management page
-	•	acknowledge alert workflow
-	•	CI/CD pipeline
-	•	Azure or AWS deployment
-	•	telemetry and monitoring
-	•	automated tests
-	•	architecture diagram
-	•	environment-based configuration
+
+1. password hashing with secure credential storage
+2. JWT-based authentication and authorization
+3. user management page for admin account control
+4. acknowledge and resolve alert workflow with status tracking
+5. CI/CD pipeline for automated build and deployment
+6. Azure or AWS cloud deployment
+7. telemetry, logging, and monitoring integration
+8. automated unit and integration testing
+9. architecture diagram and technical documentation
+10. environment-based configuration for development and production
+
 
 ---
 
@@ -454,14 +461,14 @@ Possible future enhancements include:
 CloudOps Dashboard was built to demonstrate more than interface design.
 
 It showcases:
-	•	full-stack development
-	•	dashboard engineering
-	•	API integration
-	•	database-driven authentication
-	•	role-based access control
-	•	reporting and export functionality
-	•	cloud operations thinking
-	•	enterprise-style system design
+1.	full-stack development
+2.	dashboard engineering
+3.	API integration
+4.	database-driven authentication
+5.	role-based access control
+6.	reporting and export functionality
+7.	cloud operations thinking
+8.	enterprise-style system design
 
 This project reflects the kind of internal tooling and operational platforms used in real-world technical environments.
 
@@ -470,7 +477,7 @@ This project reflects the kind of internal tooling and operational platforms use
 ### License
 
 This project is licensed under the MIT License.
-See the LICENSE￼ file for more information.
+See the LICENSE  file for more information.
 
 ---
 
